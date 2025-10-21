@@ -154,6 +154,7 @@ class AtPeopleSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.peopleFolder = value
 						await this.plugin.saveSettings()
+						this.plugin.initialize()
 					})
 			)
 		new Setting(containerEl)
