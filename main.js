@@ -117,23 +117,58 @@ class AtPeopleSuggestor extends EditorSuggest {
 		if (value.suggestionType === 'create') elem.setText('New person: ' + value.displayText)
 		else elem.setText(value.displayText)
 	}
-	selectSuggestion(value) {
-		let link
-		if (this.settings.useExplicitLinks && this.settings.useLastNameFolder) {
-			let lastName = LAST_NAME_REGEX.exec(value.displayText)
-			lastName = lastName && lastName[1] && (lastName[1] + '/') || ''
-			link = `[[${this.settings.peopleFolder}${lastName}@${value.displayText}.md|@${value.displayText}]]`
-		} else if (this.settings.useExplicitLinks && !this.settings.useLastNameFolder) {
-			link = `[[${this.settings.peopleFolder}@${value.displayText}.md|@${value.displayText}]]`
-		} else {
-			link = `[[@${value.displayText}]]`
-		}
-		value.context.editor.replaceRange(
-			link,
-			value.context.start,
-			value.context.end,
-		)
-	}
+    selectSuggestion = async (value) => {
+        let display = value.displayText
+        const normalizeFolder = (p) => p.endsWith('/') ? p : p + '/'
+        const lastNameMatch = LAST_NAME_REGEX.exec(display)
+        const lastName = lastNameMatch && lastNameMatch[1] ? lastNameMatch[1] : ''
+        const filename = `@${display}.md`
+
+        // Determine target folder where the file should be created
+        let targetFolder = normalizeFolder(this.settings.peopleFolder)
+        if (this.settings.useLastNameFolder) {
+            targetFolder = normalizeFolder(this.settings.peopleFolder) + (lastName ? lastName + '/' : '')
+        }
+
+        // Ensure folder exists (create if missing)
+        const folderToCreate = targetFolder.replace(/\/$/, '')
+        if (!this.app.vault.getAbstractFileByPath(folderToCreate)) {
+            try {
+                await this.app.vault.createFolder(folderToCreate)
+            } catch (e) {
+                // ignore if already exists or on error
+                console.warn('Could not create folder', folderToCreate, e)
+            }
+        }
+
+        // Ensure file exists in the target folder
+        const filePath = targetFolder + filename
+        if (!this.app.vault.getAbstractFileByPath(filePath)) {
+            try {
+                await this.app.vault.create(filePath, '')
+            } catch (e) {
+                console.warn('Could not create file', filePath, e)
+            }
+        }
+
+        // Build the link to insert according to settings
+        let link
+        if (this.settings.useExplicitLinks && this.settings.useLastNameFolder) {
+            link = `[[${targetFolder}${filename}|@${display}]]`
+        } else if (this.settings.useExplicitLinks && !this.settings.useLastNameFolder) {
+            // targetFolder already normalized to peopleFolder
+            link = `[[${targetFolder}${filename}|@${display}]]`
+        } else {
+            // explicit links off: insert short link (no path) even though file is created in peopleFolder or subfolder
+            link = `[[@${display}]]`
+        }
+
+        value.context.editor.replaceRange(
+            link,
+            value.context.start,
+            value.context.end,
+        )
+    }
 }
 
 class AtPeopleSettingTab extends PluginSettingTab {
