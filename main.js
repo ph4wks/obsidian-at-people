@@ -160,20 +160,24 @@ class AtPeopleSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Explicit links')
 			.setDesc('When inserting links include the full path, e.g. [[People/@Bob Dole.md|@Bob Dole]]')
-			.addToggle(
-				toggle => toggle.onChange(async (value) => {
-					this.plugin.settings.useExplicitLinks = value
-					await this.plugin.saveSettings()
-				})
+			.addToggle(toggle => toggle
+    			.setValue(this.plugin.settings.useExplicitLinks ?? false)
+    			.onChange(async (value) => {
+        			this.plugin.settings.useExplicitLinks = value;
+        			await this.plugin.saveSettings();
+        			this.plugin.initialize();
+    			})
 			)
 		new Setting(containerEl)
 			.setName('Last name folder')
 			.setDesc('When using explicit links, use the "last name" (the last non-spaced word) as a sub-folder, e.g. [[People/Dole/@Bob Dole.md|@Bob Dole]]')
-			.addToggle(
-				toggle => toggle.onChange(async (value) => {
-					this.plugin.settings.useLastNameFolder = value
-					await this.plugin.saveSettings()
-				})
+			.addToggle(toggle => toggle
+    			.setValue(this.plugin.settings.useExplicitLinks ?? false)
+    			.onChange(async (value) => {
+        			this.plugin.settings.useExplicitLinks = value;
+        			await this.plugin.saveSettings();
+        			this.plugin.initialize();
+    			})
 			)
 	}
 }
